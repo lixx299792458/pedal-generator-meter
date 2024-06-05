@@ -461,7 +461,7 @@ void loop(void) {
 	//！！！！！特别注意，如果读之前刚刚写入过，读取就会非常慢，写入后延时然后再读取。
 	//读取过快，功率显示闪动很大
 	unsigned long outputpower_updatetime_gap = millis() - outputpower_updatetime_stamp;
-	if(cumulative_time_gap > 1000){
+	if(outputpower_updatetime_gap > 1000){
 		result = node.readHoldingRegisters(4, 1);
 		if (result == node.ku8MBSuccess)
 		{
