@@ -458,12 +458,10 @@ void loop(void) {
 		connectToServer();
 		doConnect = false;
 	}
+	
 	//失去连接就开始重连
 	// if (!connected) {
-	// 	if(doScan){  // try to reconnect
-	// 		BLEDevice::getScan()->start(5, false); 
-	// 		doConnect = true;
-  	// 	}
+	// 	BLEDevice::getScan()->start(2); 
 	// } 
 	// unsigned long running_time_stamp = micros();
 	//用于使用MODBUS读取DC-DC的信息，得到输出功率，进而对比起最大值
