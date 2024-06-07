@@ -19,6 +19,8 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
+#define DEBUG
+
 // //旋转编码器定义部分
 #define CLK 36 // CLK ENCODER 
 #define DT 39 // DT ENCODER 
@@ -145,6 +147,11 @@ static void notifyCallback(
 	size_t length,
 	bool isNotify) {
 	heart_rate = pData[1];
+	#ifdef DEBUG
+    Serial.print("heart rate: ");
+    Serial.print(heart_rate);
+	Serial.println("bpm");
+	#endif
 }
 
 class MyClientCallback : public BLEClientCallbacks {
@@ -153,31 +160,69 @@ class MyClientCallback : public BLEClientCallbacks {
 
 	void onDisconnect(BLEClient* pclient) {
 		connected = false;
+		#ifdef DEBUG
+		Serial.println("onDisconnect");
+		#endif
 	}
 };
 
 bool connectToServer() {
+	#ifdef DEBUG
+	Serial.print("Forming a connection to ");
+    Serial.println(myDevice->getAddress().toString().c_str());
+	#endif
+    
     BLEClient*  pClient  = BLEDevice::createClient();
+	#ifdef DEBUG
+    Serial.println(" - Created client");
+	#endif
     pClient->setClientCallbacks(new MyClientCallback());
+    // Connect to the remove BLE Server.
     pClient->connect(myDevice);  // if you pass BLEAdvertisedDevice instead of address, it will be recognized type of peer device address (public or private)
+	#ifdef DEBUG
+    Serial.println(" - Connected to server");
+	#endif
     pClient->setMTU(517); //set client to request maximum MTU from server (default is 23 otherwise)
+  
+    // Obtain a reference to the service we are after in the remote BLE server.
     BLERemoteService* pRemoteService = pClient->getService(service_HR_UUID);
     if (pRemoteService == nullptr) {
+		#ifdef DEBUG
+		Serial.print("Failed to find our service UUID: ");
+		Serial.println(service_HR_UUID.toString().c_str());
+		#endif
 		pClient->disconnect();
 		return false;
     }
+	#ifdef DEBUG
+    Serial.println(" - Found our service");
+	#endif
+
+    // Obtain a reference to the characteristic in the service of the remote BLE server.
     pRemoteCharacteristic = pRemoteService->getCharacteristic(char_HR_UUID);
     if (pRemoteCharacteristic == nullptr) {
+		#ifdef DEBUG
+		Serial.print("Failed to find our characteristic UUID: ");
+		Serial.println(char_HR_UUID.toString().c_str());
+		#endif
 		pClient->disconnect();
 		return false;
     }
+	#ifdef DEBUG
+    Serial.println(" - Found our characteristic");
+	#endif
+    // Read the value of the characteristic.
     if(pRemoteCharacteristic->canRead()) {
 		std::string value = pRemoteCharacteristic->readValue();
+		#ifdef DEBUG
+		Serial.print("The characteristic value was: ");
+		Serial.println(value.c_str());
+		#endif
     }
 
-    if(pRemoteCharacteristic->canNotify()){
-		pRemoteCharacteristic->registerForNotify(notifyCallback);
-	}
+    if(pRemoteCharacteristic->canNotify())
+      pRemoteCharacteristic->registerForNotify(notifyCallback);
+
     connected = true;
     return true;
 }
@@ -185,15 +230,23 @@ bool connectToServer() {
  * Scan for BLE servers and find the first one that advertises the service we are looking for.
  */
 class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
-	void onResult(BLEAdvertisedDevice advertisedDevice) {
-	if (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(service_HR_UUID)) {
+ /**
+   * Called for each advertising BLE server.
+   */
+  void onResult(BLEAdvertisedDevice advertisedDevice) {
+	#ifdef DEBUG
+    Serial.print("BLE Advertised Device found: ");
+    Serial.println(advertisedDevice.toString().c_str());
+	#endif
+    // We have found a device, let us now see if it contains the service we are looking for.
+    if (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(service_HR_UUID)) {
 		BLEDevice::getScan()->stop();
 		myDevice = new BLEAdvertisedDevice(advertisedDevice);
 		doConnect = true;
 		doScan = true;
-    } 
-  } 
-}; 
+    } // Found our server
+  } // onResult
+}; // MyAdvertisedDeviceCallbacks
 
 void setup(void) {
 	//旋转编码器初始化部分
@@ -465,16 +518,33 @@ void loop(void) {
 	// 蓝牙的循环
 	//连接成功就更改标志位
 	//不连接的时候及其的拖慢循环时间
-	if (doConnect == true) {
-		connectToServer();
-		doConnect = false;
-	}
+	// if (doConnect == true) {
+	// 	connectToServer();
+	// 	doConnect = false;
+	// }
 	
-	//失去连接就开始重连
-	if (!connected) {
-		BLEDevice::getScan()->start(5); 
-	} 
-	// unsigned long running_time_stamp = micros();
+	// //失去连接就开始重连
+	// if (!connected) {
+	// 	BLEDevice::getScan()->start(5); 
+	// } 
+	if (doConnect == true) {
+		if (connectToServer()) {
+			#ifdef DEBUG
+			Serial.println("We are now connected to the BLE Server.");
+			#endif
+		} else {
+			#ifdef DEBUG
+			Serial.println("We have failed to connect to the server; there is nothin more we will do.");
+			#endif
+		}
+	doConnect = false;
+	}
+    if (!connected){
+		BLEDevice::getScan()->start(5);  // this is just example to start scan after disconnect, most likely there is better way to do it in arduino
+	}
+
+
+	// unsigned l.20ong running_time_stamp = micros();
 	//用于使用MODBUS读取DC-DC的信息，得到输出功率，进而对比起最大值
 	//读取功率数据
 	//！！！！！特别注意，如果读之前刚刚写入过，读取就会非常慢，写入后延时然后再读取。
