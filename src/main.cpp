@@ -19,7 +19,7 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
-#define DEBUG
+// #define DEBUG
 
 // //旋转编码器定义部分
 #define CLK 36 // CLK ENCODER 
@@ -38,7 +38,7 @@ ModbusMaster node;
 #define power_pre_set 160
 uint16_t power_set = 160;
 //模式1恒流限压模式的电压限定上限
-uint16_t voltage_limit = 1570;
+uint16_t voltage_limit = 1590;
 //模式2恒压模式下的电压设定
 #define voltage_pre_set 2400
 uint16_t voltage_set = 2400;
@@ -86,11 +86,11 @@ ModbusRTU mb;
 uint16_t output_power = 0;
 uint16_t cadence = 0;
 uint16_t heart_rate = 0;
-uint16_t max_output_power = 350;
-uint16_t max_cadence = 95;
-uint16_t max_heart_rate = 150;
+uint16_t max_output_power = 0;
+uint16_t max_cadence = 0;
+uint16_t max_heart_rate = 0;
 uint16_t cumulative_time = 0;
-uint16_t accumulated_wh  = 35;
+uint16_t accumulated_wh  = 0;
 
 void modbusrtu_dataprepare()
 {
