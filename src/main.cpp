@@ -67,6 +67,7 @@ char voltage_set_string[6] = "24.0V";
 unsigned long cumulative_time_stamp = 0;
 unsigned long currentadjust_time_stamp = 0;
 unsigned long outputpower_updatetime_stamp = 0;
+unsigned long voltageadjust_time_stamp = 0;
 //MODEBUS从机部分
 #define SLAVE_ID 1
 //定义1个从机类
@@ -312,12 +313,22 @@ void loop(void) {
 				u8g2.drawStr(1, 48, voltage_set_string);
 			} while ( u8g2.nextPage() );
 
-			//不同于恒功率控制，电压设置只需要一次,图方便就一直设置好了。
-			//回写设定电压和限制电流
+
+			// //不同于恒功率控制，电压设置只需要一次,图方便就一直设置好了。
+			// //回写设定电压和限制电流
+			// node.setTransmitBuffer(0, voltage_set);
+			// node.setTransmitBuffer(1, 2000);
+			// result = node.writeMultipleRegisters(0, 2);
+			// delay(100);	
+		}
+		//改成5S更新一次，且每次更新完，读取数据之前，需要延时，否则会卡住
+		unsigned long voltageadjust_time_gap = millis() - voltageadjust_time_stamp;
+		if(voltageadjust_time_gap > 2000){
 			node.setTransmitBuffer(0, voltage_set);
 			node.setTransmitBuffer(1, 2000);
 			result = node.writeMultipleRegisters(0, 2);
-			delay(100);
+			delay(50);
+			voltageadjust_time_stamp = millis();
 		}
 	}
 	if (0 == digitalRead(34))
@@ -460,9 +471,9 @@ void loop(void) {
 	}
 	
 	//失去连接就开始重连
-	// if (!connected) {
-	// 	BLEDevice::getScan()->start(2); 
-	// } 
+	if (!connected) {
+		BLEDevice::getScan()->start(5); 
+	} 
 	// unsigned long running_time_stamp = micros();
 	//用于使用MODBUS读取DC-DC的信息，得到输出功率，进而对比起最大值
 	//读取功率数据
