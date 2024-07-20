@@ -6,6 +6,8 @@
 5、开机界面下，无法调整工作模式，只能等待机后，才可以调整，应该又bug。//可能是蓝牙再阻塞扫描。
 6、有一款软件很神奇，装上会让我那个ESPDUINO32板子上的CH340显示端口号，但是无论怎么打开串口，都提示串口不可用。其他的串口转换芯片都没事，比如CP2102。
 7、为了能够现场调试，我不得不使用笔记本，但是串口不可用，我只能重新做了一版PCB，新PCB端口定义不同，代码需重写。
+8、添加了部分ODO功能，同意输出总电量和有效总时长
+9、下一步计划使用setcursor和print功能代替一个字符一个字符的编辑
 */
 
 #include <ESP32Encoder.h> 
@@ -398,8 +400,6 @@ void loop(void) {
 				u8g2.setFont(u8g2_font_inb24_mf);
 				u8g2.drawStr(1, 48, voltage_set_string);
 			} while ( u8g2.nextPage() );
-
-
 			// //不同于恒功率控制，电压设置只需要一次,图方便就一直设置好了。
 			// //回写设定电压和限制电流
 			// node.setTransmitBuffer(0, voltage_set);
