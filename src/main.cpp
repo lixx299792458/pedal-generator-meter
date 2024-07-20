@@ -15,6 +15,7 @@
 #include <ModbusMaster.h>
 #include <ModbusRTU.h>
 #include "BLEDevice.h"
+#include <Preferences.h>
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -32,6 +33,16 @@ U8G2_SSD1306_128X64_NONAME_1_4W_HW_SPI u8g2(U8G2_R0, 5, 12, 13);
 
 //modbus主机部分
 ModbusMaster node;
+
+//永久存储部分
+Preferences preferences;
+//结构体按理说比较容易阅读，但是我的能力很有限，所以用一个64bit的量代替之
+// typedef struct {
+//   uint32_t cumulative_Wh;
+//   uint32_t cumulative_Seconds;
+// } nvs_logger;
+uint32_t cumulative_Ws = 0;
+uint32_t cumulative_Seconds = 0;
 
 //输出参数及模式设置相关变量
 //功率设定值
@@ -252,13 +263,37 @@ void setup(void) {
 	//旋转编码器初始化部分
 	encoder.attachHalfQuad(DT,CLK);
 	encoder.setCount(0);
+	//ODO累计值初始化
+	preferences.begin("nvs-log", false);
+	uint64_t nvs_log64 = preferences.getULong64("nvs-log", 0);
+	cumulative_Ws = uint32_t(nvs_log64 >> 32);
+	uint32_t cumulative_Wh = cumulative_Ws / 3600;
+	cumulative_Seconds = uint32_t(nvs_log64);
+	preferences.end();
 	//显示部分初始化
+	// u8g2.begin();
+	// u8g2.firstPage();
+	// do {
+	// 	u8g2.setFont(u8g2_font_lubB14_te);
+	// 	u8g2.drawStr(1, 40, "standby");
+	// } while ( u8g2.nextPage() );
+	//显示部分改为显示累积数值
 	u8g2.begin();
 	u8g2.firstPage();
 	do {
-		u8g2.setFont(u8g2_font_lubB14_te);
-		u8g2.drawStr(1, 40, "standby");
+		u8g2.setFont(u8g2_font_VCR_OSD_tu);
+
+		u8g2.setCursor(1, 20);
+		u8g2.print("ODO:");
+		u8g2.print(cumulative_Wh);
+		u8g2.print("WH");
+
+		u8g2.setCursor(1, 52);
+		u8g2.print("ODO:");
+		u8g2.print(cumulative_Seconds);	
+		u8g2.print("S");
 	} while ( u8g2.nextPage() );
+
 	//MODBUS主机部分
 	Serial2.begin(115200);
 	node.begin(1, Serial2);
@@ -572,6 +607,18 @@ void loop(void) {
 			cumulative_time ++;
 		}
 		cumulative_time_stamp = millis();
+
+		//在这里读取累计电量和累计时长，累加后写入NVS,实际记录WS，显示的时候转换为WH
+		preferences.begin("nvs-log", false);
+		uint64_t nvs_log64 = preferences.getULong64("nvs-log", 0);
+		cumulative_Ws = uint32_t(nvs_log64 >> 32);
+		cumulative_Seconds = uint32_t(nvs_log64);
+		cumulative_Ws = cumulative_Ws + output_power;
+		cumulative_Seconds++;
+		nvs_log64 = cumulative_Ws;
+		nvs_log64 = nvs_log64 << 32 + cumulative_Seconds;
+		preferences.putULong64("nvs-log", nvs_log64);
+		preferences.end();
 	}
 	//找到最高转速
 	if(cadence > max_cadence)
