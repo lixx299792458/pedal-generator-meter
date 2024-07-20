@@ -561,21 +561,21 @@ void loop(void) {
 	// 	BLEDevice::getScan()->start(5); 
 	// } 
 	//临时注释掉，协助测试
-	// if (doConnect == true) {
-	// 	if (connectToServer()) {
-	// 		#ifdef DEBUG
-	// 		Serial.println("We are now connected to the BLE Server.");
-	// 		#endif
-	// 	} else {
-	// 		#ifdef DEBUG
-	// 		Serial.println("We have failed to connect to the server; there is nothin more we will do.");
-	// 		#endif
-	// 	}
-	// doConnect = false;
-	// }
-    // if (!connected){
-	// 	BLEDevice::getScan()->start(5);  // this is just example to start scan after disconnect, most likely there is better way to do it in arduino
-	// }
+	if (doConnect == true) {
+		if (connectToServer()) {
+			#ifdef DEBUG
+			Serial.println("We are now connected to the BLE Server.");
+			#endif
+		} else {
+			#ifdef DEBUG
+			Serial.println("We have failed to connect to the server; there is nothin more we will do.");
+			#endif
+		}
+	doConnect = false;
+	}
+    if (!connected){
+		BLEDevice::getScan()->start(5);  // this is just example to start scan after disconnect, most likely there is better way to do it in arduino
+	}
 
 
 	// unsigned l.20ong running_time_stamp = micros();
@@ -589,8 +589,6 @@ void loop(void) {
 		if (result == node.ku8MBSuccess)
 		{
 			output_power = int(node.getResponseBuffer(0)/10);
-			//为了测试，直接截断该赋值
-			output_power = 200;
 			if(output_power > max_output_power)
 			{
 				max_output_power = output_power;
@@ -599,6 +597,9 @@ void loop(void) {
 		outputpower_updatetime_stamp = millis();
 	}
 
+	//为了测试，直接截断功率赋值
+	// output_power = 200;
+
 	// Serial.println(micros()-running_time_stamp);
 	//功率大于100W开始计时
 	unsigned long cumulative_time_gap = millis() - cumulative_time_stamp;
@@ -606,16 +607,13 @@ void loop(void) {
 		if(output_power > 100)
 		{
 			cumulative_time ++;
+			//在这里读取累计电量和累计时长，累加后写入NVS,实际记录WS，显示的时候转换为WH
+			// preferences.getBytes("nvs-log", &nvs_logger, sizeof(nvs_logger));
+			nvs_logger.cumulative_Ws = nvs_logger.cumulative_Ws + output_power;
+			nvs_logger.cumulative_Seconds ++;
+			preferences.putBytes("nvs-log", &nvs_logger, sizeof(nvs_logger));
 		}
 		cumulative_time_stamp = millis();
-
-		//在这里读取累计电量和累计时长，累加后写入NVS,实际记录WS，显示的时候转换为WH
-
-		preferences.getBytes("nvs-log", &nvs_logger, sizeof(nvs_logger));
-		nvs_logger.cumulative_Ws = nvs_logger.cumulative_Ws + output_power;
-		nvs_logger.cumulative_Seconds ++;
-		preferences.putBytes("nvs-log", &nvs_logger, sizeof(nvs_logger));
-
 	}
 	//找到最高转速
 	if(cadence > max_cadence)
