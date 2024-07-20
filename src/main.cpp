@@ -36,13 +36,15 @@ ModbusMaster node;
 
 //永久存储部分
 Preferences preferences;
+//结构体才是正道
+struct logtype {
+  uint32_t cumulative_Ws;
+  uint32_t cumulative_Seconds;
+};
+logtype nvs_logger = {0,0};
 //结构体按理说比较容易阅读，但是我的能力很有限，所以用一个64bit的量代替之
-// typedef struct {
-//   uint32_t cumulative_Wh;
-//   uint32_t cumulative_Seconds;
-// } nvs_logger;
-uint32_t cumulative_Ws = 0;
-uint32_t cumulative_Seconds = 0;
+// uint32_t cumulative_Ws = 0;
+// uint32_t cumulative_Seconds = 0;
 
 //输出参数及模式设置相关变量
 //功率设定值
@@ -265,11 +267,7 @@ void setup(void) {
 	encoder.setCount(0);
 	//ODO累计值初始化
 	preferences.begin("nvs-log", false);
-	uint64_t nvs_log64 = preferences.getULong64("nvs-log", 0);
-	cumulative_Ws = uint32_t(nvs_log64 >> 32);
-	uint32_t cumulative_Wh = cumulative_Ws / 3600;
-	cumulative_Seconds = uint32_t(nvs_log64);
-	preferences.end();
+	preferences.getBytes("nvs-log", &nvs_logger, sizeof(nvs_logger));
 	//显示部分初始化
 	// u8g2.begin();
 	// u8g2.firstPage();
@@ -285,12 +283,12 @@ void setup(void) {
 
 		u8g2.setCursor(1, 20);
 		u8g2.print("ODO:");
-		u8g2.print(cumulative_Wh);
+		u8g2.print(nvs_logger.cumulative_Ws);
 		u8g2.print("WH");
 
 		u8g2.setCursor(1, 52);
 		u8g2.print("ODO:");
-		u8g2.print(cumulative_Seconds);	
+		u8g2.print(nvs_logger.cumulative_Seconds);	
 		u8g2.print("S");
 	} while ( u8g2.nextPage() );
 
@@ -609,16 +607,12 @@ void loop(void) {
 		cumulative_time_stamp = millis();
 
 		//在这里读取累计电量和累计时长，累加后写入NVS,实际记录WS，显示的时候转换为WH
-		preferences.begin("nvs-log", false);
-		uint64_t nvs_log64 = preferences.getULong64("nvs-log", 0);
-		cumulative_Ws = uint32_t(nvs_log64 >> 32);
-		cumulative_Seconds = uint32_t(nvs_log64);
-		cumulative_Ws = cumulative_Ws + output_power;
-		cumulative_Seconds++;
-		nvs_log64 = cumulative_Ws;
-		nvs_log64 = nvs_log64 << 32 + cumulative_Seconds;
-		preferences.putULong64("nvs-log", nvs_log64);
-		preferences.end();
+
+		preferences.getBytes("nvs-log", &nvs_logger, sizeof(nvs_logger));
+		nvs_logger.cumulative_Ws = nvs_logger.cumulative_Ws + output_power;
+		nvs_logger.cumulative_Seconds ++;
+		preferences.putBytes("nvs-log", &nvs_logger, sizeof(nvs_logger));
+
 	}
 	//找到最高转速
 	if(cadence > max_cadence)
