@@ -283,7 +283,7 @@ void setup(void) {
 
 		u8g2.setCursor(1, 20);
 		u8g2.print("ODO:");
-		u8g2.print(nvs_logger.cumulative_Ws);
+		u8g2.print((nvs_logger.cumulative_Ws)/3600);
 		u8g2.print("WH");
 
 		u8g2.setCursor(1, 52);
@@ -560,21 +560,22 @@ void loop(void) {
 	// if (!connected) {
 	// 	BLEDevice::getScan()->start(5); 
 	// } 
-	if (doConnect == true) {
-		if (connectToServer()) {
-			#ifdef DEBUG
-			Serial.println("We are now connected to the BLE Server.");
-			#endif
-		} else {
-			#ifdef DEBUG
-			Serial.println("We have failed to connect to the server; there is nothin more we will do.");
-			#endif
-		}
-	doConnect = false;
-	}
-    if (!connected){
-		BLEDevice::getScan()->start(5);  // this is just example to start scan after disconnect, most likely there is better way to do it in arduino
-	}
+	//临时注释掉，协助测试
+	// if (doConnect == true) {
+	// 	if (connectToServer()) {
+	// 		#ifdef DEBUG
+	// 		Serial.println("We are now connected to the BLE Server.");
+	// 		#endif
+	// 	} else {
+	// 		#ifdef DEBUG
+	// 		Serial.println("We have failed to connect to the server; there is nothin more we will do.");
+	// 		#endif
+	// 	}
+	// doConnect = false;
+	// }
+    // if (!connected){
+	// 	BLEDevice::getScan()->start(5);  // this is just example to start scan after disconnect, most likely there is better way to do it in arduino
+	// }
 
 
 	// unsigned l.20ong running_time_stamp = micros();
@@ -588,6 +589,8 @@ void loop(void) {
 		if (result == node.ku8MBSuccess)
 		{
 			output_power = int(node.getResponseBuffer(0)/10);
+			//为了测试，直接截断该赋值
+			output_power = 200;
 			if(output_power > max_output_power)
 			{
 				max_output_power = output_power;
