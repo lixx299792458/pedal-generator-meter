@@ -9,6 +9,7 @@
 8、添加了部分ODO功能，同意输出总电量和有效总时长
 9、下一步计划使用setcursor和print功能代替一个字符一个字符的编辑
 10、新版本的编码器反转，调整一下
+11、添加一个使能电源板开机功能。
 */
 
 #include <ESP32Encoder.h> 
@@ -315,6 +316,10 @@ void setup(void) {
 	pBLEScan->start(5, false);
 	//使用硬件频率计
 	attachInterrupt(35,frequency_meter,FALLING);
+	//修复一个bug，自动开机设置
+	node.writeSingleRegister(0x0012,1);
+	//稍作延时，等待参数写入完毕
+	delay(50);
 }
 
 void loop(void) {
