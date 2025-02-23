@@ -8,6 +8,7 @@
 7、为了能够现场调试，我不得不使用笔记本，但是串口不可用，我只能重新做了一版PCB，新PCB端口定义不同，代码需重写。
 8、添加了部分ODO功能，同意输出总电量和有效总时长
 9、下一步计划使用setcursor和print功能代替一个字符一个字符的编辑
+10、新版本的编码器反转，调整一下
 */
 
 #include <ESP32Encoder.h> 
@@ -25,8 +26,8 @@
 // #define DEBUG
 
 // //旋转编码器定义部分
-#define CLK 36 // CLK ENCODER 
-#define DT 39 // DT ENCODER 
+#define CLK 39 // CLK ENCODER 
+#define DT 36 // DT ENCODER 
 ESP32Encoder encoder;
 
 //屏幕相关定义
@@ -50,13 +51,13 @@ logtype nvs_logger = {0,0};
 
 //输出参数及模式设置相关变量
 //功率设定值
-#define power_pre_set 160
-uint16_t power_set = 160;
+#define power_pre_set 200
+uint16_t power_set = 200;
 //模式1恒流限压模式的电压限定上限
 uint16_t voltage_limit = 1590;
 //模式2恒压模式下的电压设定
-#define voltage_pre_set 2400
-uint16_t voltage_set = 2400;
+#define voltage_pre_set 2480
+uint16_t voltage_set = 2480;
 //模式声明
 uint8_t working_mode = 200;
 //通过各种条件触发或解除待机显示
@@ -75,9 +76,9 @@ int voltage_set_encoderpos = 0;
 int voltage_set_encodernewpos = 0;
 
 //辅助字符数组
-char power_set_string[6] = "160W";
+char power_set_string[6] = "200W";
 // String power_set_string;
-char voltage_set_string[6] = "24.0V";
+char voltage_set_string[6] = "24.8V";
 // 定义字符缓冲区
 
 //定义变量方便计时
